@@ -67,10 +67,15 @@ VulkanPipeline::VulkanPipeline(VulkanDevice& device,
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0F;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    // Y-flip'i projeksiyon matrisinde yaptigimiz icin sarim yonu ekranda ters doner.
-    // Bu yuzden on yuz COUNTER_CLOCKWISE degil CLOCKWISE olarak isaretlenir.
-    // (Alternatif: negatif viewport yuksekligi kullanip CCW birakmak.)
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    // Geometri, disaridan bakildiginda saat yonunun tersi (CCW) sarilir.
+    //
+    // Vulkan cerceve tamponunda +Y asagi dogrudur ve bu tek basina sarim yonunu
+    // ters cevirir; ANCAK projeksiyondaki Y-flip bunu geri alir. Iki ters cevirme
+    // birbirini goturur, dolayisiyla dogru deger CCW'dir.
+    // Bu, gozle dogrulanmistir: CLOCKWISE ile tek yuzlu zemin duzlemi tamamen
+    // eleniyordu (kapali kutularda fark edilmiyordu, cunku disbukey bir cismin
+    // silueti yanlis sarimda da ayni kalir).
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling{};

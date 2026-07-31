@@ -51,8 +51,10 @@ private:
     glm::vec3 m_smoothedTarget{0.0F};
     bool m_hasTarget = false;
 
-    float m_yaw = 0.0F;                       // Y ekseni etrafinda, radyan.
-    float m_pitch = glm::radians(-12.0F);     // Hafif yukaridan bakis.
+    float m_yaw = 0.0F;  // Y ekseni etrafinda, radyan.
+    // Pozitif pitch kamerayi pivotun USTUNE tasir, yani asagi baktirir.
+    // Varsayilan: karakteri hafif yukaridan goren omuz ustu acisi.
+    float m_pitch = glm::radians(14.0F);
     float m_distance = 6.0F;                  // Omuz mesafesi.
     glm::vec3 m_shoulderOffset{0.7F, 1.7F, 0.0F};  // Sag omuz + goz hizasi.
 
@@ -64,8 +66,8 @@ private:
     float m_nearPlane = 0.1F;
     float m_farPlane = 500.0F;
 
-    static constexpr float kMinPitch = -1.4F;  // ~ -80 derece
-    static constexpr float kMaxPitch = 0.9F;   // ~ +51 derece
+    static constexpr float kMinPitch = -0.85F;  // ~ -49 derece: yukari bakis siniri
+    static constexpr float kMaxPitch = 1.30F;   // ~ +74 derece: neredeyse tepeden bakis
 };
 
 }  // namespace optmus::scene
