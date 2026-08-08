@@ -47,26 +47,50 @@ devam ediyor.
 
 ## Kurulum
 
-```bash
+### Windows
+
+`optimus-ai` klasöründeki **`run.bat`** dosyasına çift tıkla. Ya da Komut
+İstemi'nde:
+
+```
 cd optimus-ai
-./run.sh                # sanal ortam + bağımlılıklar + sunucu
+run.bat
 ```
 
-İlk çalıştırma `.env` dosyasını oluşturur. İçinde en az şunu doldur:
+> Aşağıdaki kod bloklarında `#` ile başlayan satırlar **açıklama**, komut
+> değil. Windows'ta yapıştırırsan `'#' is not recognized` hatası verir —
+> o satırları atla.
+
+### macOS / Linux
+
+```bash
+cd optimus-ai
+./run.sh
+```
+
+### İkisinde de
+
+İlk çalıştırma `.env` dosyasını oluşturup durur. Bu dosyayı bir metin
+düzenleyiciyle (Windows'ta Not Defteri) aç ve şu satırı doldur:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Sonra tekrar `./run.sh` → <http://127.0.0.1:8000>
+Kaydet, `run.bat` / `./run.sh` komutunu tekrar çalıştır →
+<http://127.0.0.1:8000>
 
-**ffmpeg gerekli** (video ve kurgu için):
+**ffmpeg gerekli** (video ve kurgu için; sohbet ve kod yazma ffmpeg'siz de
+çalışır):
 
-```bash
-sudo apt install ffmpeg      # Debian/Ubuntu
-brew install ffmpeg          # macOS
-winget install Gyan.FFmpeg   # Windows
-```
+| Sistem | Komut |
+|---|---|
+| Windows | `winget install Gyan.FFmpeg` |
+| macOS | `brew install ffmpeg` |
+| Debian/Ubuntu | `sudo apt install ffmpeg` |
+
+Windows'ta ffmpeg'i kurduktan sonra **komut penceresini kapatıp yeniden aç**;
+`PATH` ancak o zaman güncellenir.
 
 Yazı bindirme (altyazı) için ffmpeg'in `drawtext` filtresiyle derlenmiş
 olması gerekir. Dağıtımların standart paketlerinde var; bazı statik
@@ -195,11 +219,12 @@ curl -s localhost:8000/api/video -H 'content-type: application/json' -d '{
 
 ## Testler
 
-```bash
-./.venv/bin/python -m pytest -q
+```
+Windows        .venv\Scripts\python -m pytest -q
+macOS / Linux  ./.venv/bin/python -m pytest -q
 ```
 
-29 test var; kurgu derleyicisi ffmpeg kurulu olmadan da test edilir
+47 test var; kurgu derleyicisi ffmpeg kurulu olmadan da test edilir
 (üretilen filtre grafiği string olarak doğrulanır).
 
 ## Dosya düzeni

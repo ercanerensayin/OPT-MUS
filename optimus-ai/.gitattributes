@@ -1,0 +1,3 @@
+# Windows toplu is dosyalari CRLF olmali; LF ile goto/label bozulabilir.
+*.bat text eol=crlf
+*.sh  text eol=lf
