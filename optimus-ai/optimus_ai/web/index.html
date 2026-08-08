@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OPTIMUS AI</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>OPTIMUS <span>AI</span></h1>
+    <div id="caps" class="caps">yetenekler yükleniyor…</div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="chat" class="active">Sohbet</button>
+    <button data-tab="build">Uygulama / Oyun</button>
+    <button data-tab="image">Görsel</button>
+    <button data-tab="video">Video</button>
+    <button data-tab="edit">Kurgu</button>
+  </nav>
+
+  <main>
+    <section id="tab-chat" class="tab active">
+      <div id="transcript" class="transcript"></div>
+      <form id="chat-form">
+        <textarea id="chat-input" rows="3" placeholder="Ne yapalım? (Enter: gönder, Shift+Enter: satır)"></textarea>
+        <button type="submit">Gönder</button>
+      </form>
+      <p class="hint" id="route-hint"></p>
+    </section>
+
+    <section id="tab-build" class="tab">
+      <label>Ne üretilsin?
+        <textarea id="build-input" rows="4" placeholder="Örn: klavye ile oynanan, skor tutan bir yılan oyunu"></textarea>
+      </label>
+      <label>Tür
+        <select id="build-kind">
+          <option value="game">Oyun</option>
+          <option value="app">Uygulama</option>
+        </select>
+      </label>
+      <button id="build-go">Üret</button>
+      <pre id="build-out" class="out"></pre>
+    </section>
+
+    <section id="tab-image" class="tab">
+      <label>Görsel açıklaması
+        <textarea id="image-input" rows="3" placeholder="Örn: gün batımında sisli dağ manzarası, sinematik"></textarea>
+      </label>
+      <label>Oran
+        <select id="image-shape">
+          <option value="square">Kare</option>
+          <option value="landscape">Yatay</option>
+          <option value="portrait">Dikey</option>
+        </select>
+      </label>
+      <button id="image-go">Üret</button>
+      <div id="image-out" class="out"></div>
+    </section>
+
+    <section id="tab-video" class="tab">
+      <label>Video fikri
+        <textarea id="video-input" rows="4" placeholder="Örn: bir kahve çekirdeğinin tarladan fincana yolculuğu"></textarea>
+      </label>
+      <div class="row">
+        <label>Süre (saniye)
+          <input id="video-seconds" type="number" value="60" min="1" step="1" />
+        </label>
+        <label>Şablon
+          <select id="video-preset"></select>
+        </label>
+        <label>Geçiş
+          <select id="video-transition">
+            <option value="fade">fade</option>
+            <option value="dissolve">dissolve</option>
+            <option value="wipeleft">wipeleft</option>
+            <option value="slideup">slideup</option>
+            <option value="circleopen">circleopen</option>
+            <option value="cut">kesme</option>
+          </select>
+        </label>
+        <label class="check">
+          <input id="video-captions" type="checkbox" checked /> Altyazı
+        </label>
+      </div>
+      <p class="hint">
+        Süre için üst sınır yok. İstek, modelin tek seferde üretebildiği
+        uzunlukta parçalara bölünür, parçalar zincirlenip birleştirilir —
+        süreyi yalnızca beklemeye ve API bütçene razı olduğun kadar uzatabilirsin.
+      </p>
+      <button id="video-go">Üret</button>
+      <div id="video-progress" class="progress"></div>
+      <div id="video-out" class="out"></div>
+    </section>
+
+    <section id="tab-edit" class="tab">
+      <p class="hint">
+        Kurgu tanımı (JSON). Kesme, geçiş, hız, renk/LUT, yazı, müzik ve
+        ducking burada. <b>Önizle</b> ffmpeg komutunu gösterir, <b>Render</b> çalıştırır.
+      </p>
+      <textarea id="edit-input" rows="18" spellcheck="false"></textarea>
+      <div class="row">
+        <button id="edit-preview">Önizle</button>
+        <button id="edit-render">Render</button>
+      </div>
+      <pre id="edit-out" class="out"></pre>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
