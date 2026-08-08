@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPTIMUS AI</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --line:#2a313c; --text:#e6edf3;
+    --muted:#8b95a5; --accent:#4c8dff; --ok:#3fb950; --err:#f85149;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text); display:flex;
+    flex-direction:column;
+    font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+  }
+
+  header{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:12px 18px; border-bottom:1px solid var(--line); background:var(--panel);
+  }
+  .logo{font-weight:700; letter-spacing:2px; font-size:16px}
+  .logo span{color:var(--accent)}
+  header select{
+    background:var(--bg); color:var(--text); border:1px solid var(--line);
+    border-radius:7px; padding:6px 9px; font:inherit; font-size:13px;
+  }
+  .spacer{flex:1}
+  .keystate{font-size:13px; color:var(--muted); cursor:pointer; text-decoration:underline dotted}
+  .keystate.ok{color:var(--ok)}
+  .keystate.bad{color:var(--err)}
+
+  nav{display:flex; gap:4px; padding:10px 18px 0; border-bottom:1px solid var(--line)}
+  nav button{
+    background:none; border:1px solid transparent; border-bottom:none; color:var(--muted);
+    padding:8px 16px; border-radius:8px 8px 0 0; cursor:pointer; font:inherit; font-size:14px;
+    position:relative; top:1px;
+  }
+  nav button.on{background:var(--bg); border-color:var(--line); color:var(--text)}
+
+  main{flex:1; min-height:0; display:flex}
+  .page{display:none; flex:1; min-height:0; flex-direction:column}
+  .page.on{display:flex}
+
+  /* --- sohbet --- */
+  #log{flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:14px}
+  .msg{max-width:56rem; border:1px solid var(--line); border-radius:10px; padding:11px 14px; white-space:pre-wrap; word-wrap:break-word}
+  .msg.me{background:#15243d; border-color:#2c4a80; align-self:flex-end}
+  .msg.ai{background:var(--panel)}
+  .msg .who{font-size:11px; color:var(--muted); margin-bottom:5px; letter-spacing:.5px}
+  .msg pre{background:#0b0f14; border:1px solid var(--line); border-radius:7px; padding:10px; overflow-x:auto; margin:8px 0}
+  .msg code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px}
+
+  .composer{display:flex; gap:10px; padding:14px 18px; border-top:1px solid var(--line); background:var(--panel)}
+  .composer textarea{flex:1; resize:none}
+
+  textarea,input[type=password],input[type=text]{
+    background:var(--bg); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px; font:inherit;
+  }
+  textarea{font-family:inherit}
+  button.go{
+    background:var(--accent); color:#fff; border:0; border-radius:8px;
+    padding:10px 20px; font:inherit; cursor:pointer; white-space:nowrap;
+  }
+  button.go:disabled{opacity:.45; cursor:default}
+  button.ghost{
+    background:none; color:var(--muted); border:1px solid var(--line);
+    border-radius:8px; padding:9px 14px; font:inherit; cursor:pointer;
+  }
+  button.ghost:hover:not(:disabled){color:var(--text); border-color:#3d4652}
+  button.ghost:disabled{opacity:.35; cursor:default}
+
+  .welcome{margin:auto; max-width:34rem; text-align:center; color:var(--muted); line-height:1.8}
+  .welcome h3{color:var(--text); font-size:17px; margin:0 0 10px; font-weight:600}
+  .welcome .chips{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:16px}
+  .welcome .chips button{
+    background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    border-radius:20px; padding:7px 15px; font:inherit; font-size:13px; cursor:pointer;
+  }
+  .welcome .chips button:hover{color:var(--text); border-color:var(--accent)}
+
+  /* --- yap --- */
+  .buildbar{display:flex; gap:10px; padding:14px 18px; border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap}
+  .buildbar textarea{flex:1; min-width:280px; height:62px}
+  .split{flex:1; min-height:0; display:flex}
+  .preview{flex:1; min-width:0; display:flex; flex-direction:column; border-right:1px solid var(--line)}
+  .preview iframe{flex:1; border:0; background:#fff}
+  .side{width:330px; display:flex; flex-direction:column; background:var(--panel)}
+  .side .head{padding:11px 14px; border-bottom:1px solid var(--line); font-size:13px; color:var(--muted)}
+  .side .body{flex:1; overflow-y:auto; padding:14px; font-size:13px; white-space:pre-wrap; color:var(--muted)}
+  .side .foot{padding:12px 14px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:8px}
+  .empty{flex:1; display:flex; align-items:center; justify-content:center; color:var(--muted); text-align:center; padding:30px; line-height:1.7}
+
+  /* --- ayarlar / modal --- */
+  .modal{position:fixed; inset:0; background:#000b; display:none; align-items:center; justify-content:center; padding:20px; z-index:50}
+  .modal.on{display:flex}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; max-width:520px; width:100%}
+  .card h2{margin:0 0 6px; font-size:17px}
+  .card p{color:var(--muted); font-size:13.5px; margin:8px 0}
+  .card input{width:100%; margin:10px 0}
+  .card .row{display:flex; gap:10px; justify-content:flex-end; margin-top:14px}
+  .card a{color:var(--accent)}
+
+  .toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:11px 18px; font-size:13.5px; display:none; z-index:60; max-width:90vw;
+  }
+  .toast.on{display:block}
+  .toast.err{border-color:var(--err); color:#ffb4ae}
+
+  @media (max-width:860px){
+    .split{flex-direction:column}
+    .side{width:auto; max-height:45%}
+    .preview{border-right:0; border-bottom:1px solid var(--line)}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">OPTIMUS <span>AI</span></div>
+  <select id="model" title="Model">
+    <option value="claude-opus-5">Opus 5 — en yetenekli</option>
+    <option value="claude-sonnet-5">Sonnet 5 — hızlı/ucuz</option>
+    <option value="claude-haiku-4-5">Haiku 4.5 — en hızlı</option>
+  </select>
+  <select id="effort" title="Düşünme derinliği">
+    <option value="low">düşük</option>
+    <option value="medium">orta</option>
+    <option value="high" selected>yüksek</option>
+    <option value="xhigh">çok yüksek</option>
+  </select>
+  <div class="spacer"></div>
+  <div class="keystate" id="keystate">anahtar…</div>
+</header>
+
+<nav>
+  <button data-p="chat" class="on">Sohbet</button>
+  <button data-p="build">Uygulama / Oyun Yap</button>
+</nav>
+
+<main>
+  <!-- ================= SOHBET ================= -->
+  <section class="page on" id="p-chat">
+    <div id="log">
+      <div class="welcome" id="welcome">
+        <h3>Ne yapalım?</h3>
+        Kod yazarım, açıklarım, planlarım, hata ayıklarım.<br>
+        Çalışan bir uygulama veya oyun istiyorsan üstteki
+        <b>Uygulama / Oyun Yap</b> sekmesine geç — orada anında çalışır hâlde çıkar.
+        <div class="chips">
+          <button>Bu hatayı açıkla</button>
+          <button>Python'da dosya nasıl okunur?</button>
+          <button>Bir fikir üzerine beyin fırtınası yap</button>
+        </div>
+      </div>
+    </div>
+    <div class="composer">
+      <textarea id="ask" rows="2" placeholder="Bir şey sor…  (Enter gönderir, Shift+Enter yeni satır)"></textarea>
+      <button class="go" id="send">Gönder</button>
+      <button class="ghost" id="stop" style="display:none">Durdur</button>
+    </div>
+  </section>
+
+  <!-- ================= YAP ================= -->
+  <section class="page" id="p-build">
+    <div class="buildbar">
+      <textarea id="spec" placeholder="Ne yapayım?  Örn: klavye ile oynanan, skor tutan yılan oyunu"></textarea>
+      <button class="go" id="make">Üret</button>
+      <button class="ghost" id="stop2" style="display:none">Durdur</button>
+    </div>
+    <div class="split">
+      <div class="preview">
+        <div class="empty" id="ph">
+          Ürettiğin uygulama/oyun burada <b>anında çalışır</b>.<br>
+          Oyunlarda klavye için önce oyun alanına bir kez tıkla.
+        </div>
+        <iframe id="frame" sandbox="allow-scripts allow-modals allow-pointer-lock" style="display:none"></iframe>
+      </div>
+      <div class="side">
+        <div class="head" id="side-head">durum</div>
+        <div class="body" id="side-body">Henüz bir şey üretilmedi.</div>
+        <div class="foot">
+          <textarea id="tweak" rows="2" placeholder="Değiştir: örn. 'hız artsın, duvara çarpınca bitmesin'"></textarea>
+          <button class="ghost" id="revise" disabled>Bunu düzelt / geliştir</button>
+          <button class="ghost" id="save" disabled>HTML olarak indir</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= ANAHTAR ================= -->
+<div class="modal" id="modal">
+  <div class="card">
+    <h2>Anthropic API anahtarı</h2>
+    <p>
+      Bu uygulama doğrudan senin tarayıcından Anthropic'e bağlanır — arada
+      başka bir sunucu yok. Anahtar yalnızca bu bilgisayarda, tarayıcının
+      yerel deposunda saklanır.
+    </p>
+    <p>
+      Anahtarı <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>
+      → API Keys sayfasından alırsın. Kullanım ücretli; harcamayı aynı
+      panelden sınırlayabilirsin.
+    </p>
+    <input type="password" id="keyin" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <div class="row">
+      <button class="ghost" id="forget">Anahtarı sil</button>
+      <button class="go" id="savekey">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const KEY_STORE = "optimus.key";
+const API = "https://api.anthropic.com/v1/messages";
+
+let apiKey = localStorage.getItem(KEY_STORE) || "";
+let aborter = null;
+
+/* ---------- küçük yardımcılar ---------- */
+
+function toast(text, isError) {
+  const el = $("toast");
+  el.textContent = text;
+  el.className = "toast on" + (isError ? " err" : "");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => (el.className = "toast"), isError ? 7000 : 3500);
+}
+
+function refreshKeyState() {
+  const el = $("keystate");
+  if (apiKey) {
+    el.textContent = "anahtar: •••" + apiKey.slice(-4);
+    el.className = "keystate ok";
+  } else {
+    el.textContent = "anahtar gerekli — tıkla";
+    el.className = "keystate bad";
+  }
+}
+
+function requireKey() {
+  if (apiKey) return true;
+  $("modal").classList.add("on");
+  $("keyin").focus();
+  return false;
+}
+
+function escapeHtml(text) {
+  return text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
+
+/** Sohbet balonu: ``` blokları <pre> olarak, gerisi düz metin. */
+function renderMarkdownish(text) {
+  const parts = text.split(/```(?:[a-zA-Z0-9]*)\n?/);
+  return parts
+    .map((part, i) =>
+      i % 2 ? `<pre><code>${escapeHtml(part)}</code></pre>` : escapeHtml(part)
+    )
+    .join("");
+}
+
+/* ---------- Anthropic çağrısı (streaming) ---------- */
+
+async function callClaude({ system, messages, maxTokens, onText }) {
+  aborter = new AbortController();
+  let response;
+  try {
+    response = await fetch(API, {
+      method: "POST",
+      signal: aborter.signal,
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        // Tarayıcıdan doğrudan çağrı için gerekli.
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: $("model").value,
+        max_tokens: maxTokens,
+        system,
+        messages,
+        stream: true,
+        thinking: { type: "adaptive" },
+        output_config: { effort: $("effort").value },
+      }),
+    });
+  } catch (error) {
+    if (error.name === "AbortError") throw error;
+    throw new Error(
+      "Anthropic'e bağlanılamadı. İnternet bağlantını kontrol et. (" + error.message + ")"
+    );
+  }
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      detail = (await response.json())?.error?.message || "";
+    } catch {}
+    if (response.status === 401) {
+      throw new Error("API anahtarı geçersiz. Sağ üstten yenisini gir.");
+    }
+    if (response.status === 429) {
+      throw new Error("Hız sınırına takıldın, biraz bekleyip tekrar dene.");
+    }
+    if (response.status === 400 && /credit|balance/i.test(detail)) {
+      throw new Error("Hesabında kredi kalmamış: " + detail);
+    }
+    throw new Error(`Anthropic hatası ${response.status}: ${detail || response.statusText}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let full = "";
+  let stopReason = null;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    // SSE olayları boş satırla ayrılır.
+    const events = buffer.split("\n\n");
+    buffer = events.pop();
+
+    for (const block of events) {
+      for (const line of block.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        let event;
+        try {
+          event = JSON.parse(line.slice(5).trim());
+        } catch {
+          continue;
+        }
+        if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+          full += event.delta.text;
+          onText?.(event.delta.text, full);
+        } else if (event.type === "message_delta" && event.delta?.stop_reason) {
+          stopReason = event.delta.stop_reason;
+        } else if (event.type === "error") {
+          throw new Error(event.error?.message || "Akış sırasında hata.");
+        }
+      }
+    }
+  }
+
+  aborter = null;
+  if (stopReason === "refusal") {
+    throw new Error("Model bu isteği güvenlik nedeniyle yanıtlamadı.");
+  }
+  return { text: full, stopReason };
+}
+
+function busy(on, stopId, goId) {
+  $(goId).disabled = on;
+  $(stopId).style.display = on ? "" : "none";
+}
+
+/* ---------- sekmeler ---------- */
+
+document.querySelectorAll("nav button").forEach((tab) => {
+  tab.onclick = () => {
+    document.querySelectorAll("nav button").forEach((b) => b.classList.remove("on"));
+    document.querySelectorAll(".page").forEach((p) => p.classList.remove("on"));
+    tab.classList.add("on");
+    $("p-" + tab.dataset.p).classList.add("on");
+  };
+});
+
+/* ---------- sohbet ---------- */
+
+const CHAT_SYSTEM = `Sen OPTIMUS'sun, Türkçe konuşan bir yapım asistanısın.
+Kod, tasarım, planlama ve genel sorularda yardımcı olursun.
+
+Bildiğini net söyle, bilmediğine "bilmiyorum" de — uydurma. Güncel olaylar,
+fiyatlar ve sürüm numaraları gibi değişken bilgilerde eğitim verinin bir
+kesme tarihi olduğunu hatırlat.
+
+Cevabı soruya göre ölçekle: basit soruya kısa ve doğrudan cevap ver, başlık
+ve madde yığını kurma. Kod verirken eksiksiz ve çalışır ver.`;
+
+const chatHistory = [];
+
+function addBubble(kind, text) {
+  $("welcome")?.remove();
+  const el = document.createElement("div");
+  el.className = "msg " + kind;
+  el.innerHTML = `<div class="who">${kind === "me" ? "SEN" : "OPTIMUS"}</div>`;
+  const body = document.createElement("div");
+  body.innerHTML = renderMarkdownish(text);
+  el.appendChild(body);
+  $("log").appendChild(el);
+  $("log").scrollTop = $("log").scrollHeight;
+  return body;
+}
+
+async function send() {
+  const question = $("ask").value.trim();
+  if (!question || !requireKey()) return;
+
+  $("ask").value = "";
+  addBubble("me", question);
+  chatHistory.push({ role: "user", content: question });
+
+  const target = addBubble("ai", "…");
+  busy(true, "stop", "send");
+
+  try {
+    const { text } = await callClaude({
+      system: CHAT_SYSTEM,
+      messages: chatHistory,
+      maxTokens: 32000,
+      onText: (_, full) => {
+        target.innerHTML = renderMarkdownish(full);
+        $("log").scrollTop = $("log").scrollHeight;
+      },
+    });
+    chatHistory.push({ role: "assistant", content: text });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      target.innerHTML += "<i> [durduruldu]</i>";
+      chatHistory.pop();
+    } else {
+      target.innerHTML = `<span style="color:var(--err)">${escapeHtml(error.message)}</span>`;
+      chatHistory.pop();
+      toast(error.message, true);
+    }
+  } finally {
+    busy(false, "stop", "send");
+  }
+}
+
+document.querySelectorAll(".welcome .chips button").forEach((chip) => {
+  chip.onclick = () => {
+    $("ask").value = chip.textContent;
+    $("ask").focus();
+  };
+});
+
+$("send").onclick = send;
+$("stop").onclick = () => aborter?.abort();
+$("ask").onkeydown = (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+};
+
+/* ---------- uygulama / oyun üretimi ---------- */
+
+const BUILD_SYSTEM = `Sen kıdemli bir frontend geliştiricisisin. İstenen
+uygulamayı veya oyunu TEK BİR eksiksiz HTML dosyası olarak yazarsın.
+
+Katı kurallar:
+- Cevabın SADECE tek bir \`\`\`html kod bloğu olsun. Blok dışında açıklama yazma.
+- Dosya <!doctype html> ile başlasın; CSS <style>, JS <script> içinde gömülü olsun.
+- Dış bağımlılık YOK: CDN, harici font, harici görsel, fetch kullanma.
+  Grafik gerekiyorsa canvas veya CSS ile çiz, ses gerekiyorsa WebAudio ile üret.
+- Kod eksiksiz ve çalışır olsun; "buraya ekle" gibi yer tutucu bırakma.
+- Oyunlarda: oyun döngüsü, klavye/dokunmatik kontrol, skor, oyun-bitti ekranı
+  ve yeniden başlatma olsun. Sayfa yüklenince kendi kendine çalışsın.
+- Arayüz metinleri Türkçe olsun. Karanlık tema, okunaklı ve derli toplu tasarım.`;
+
+let currentHtml = "";
+const buildHistory = [];
+
+function extractHtml(text) {
+  const fenced = text.match(/```(?:html)?\s*\n([\s\S]*?)```/i);
+  const code = fenced ? fenced[1] : text;
+  return code.trim();
+}
+
+async function generate(instruction, isRevision) {
+  if (!requireKey()) return;
+
+  busy(true, "stop2", "make");
+  busy(true, "stop2", "revise");
+  $("side-head").textContent = isRevision ? "düzeltiliyor…" : "üretiliyor…";
+  $("side-body").textContent = "";
+
+  buildHistory.push({ role: "user", content: instruction });
+
+  let received = 0;
+  try {
+    const { text, stopReason } = await callClaude({
+      system: BUILD_SYSTEM,
+      messages: buildHistory,
+      maxTokens: 64000,
+      onText: (chunk, full) => {
+        received += chunk.length;
+        $("side-body").textContent =
+          `${received.toLocaleString("tr")} karakter yazıldı…\n\n` + full.slice(-1200);
+        $("side-body").scrollTop = $("side-body").scrollHeight;
+      },
+    });
+
+    const html = extractHtml(text);
+    if (!/<html|<!doctype|<body|<canvas|<script/i.test(html)) {
+      throw new Error("Model çalıştırılabilir bir HTML üretmedi. İsteği biraz daha netleştir.");
+    }
+    if (stopReason === "max_tokens") {
+      toast("Çıktı uzunluk sınırına takıldı; sonu eksik olabilir.", true);
+    }
+
+    buildHistory.push({ role: "assistant", content: text });
+    currentHtml = html;
+
+    $("ph").style.display = "none";
+    const frame = $("frame");
+    frame.style.display = "";
+    frame.srcdoc = html;
+
+    $("side-head").textContent = "hazır";
+    $("side-body").textContent =
+      `${html.length.toLocaleString("tr")} karakterlik tek dosya üretildi.\n\n` +
+      `Soldaki alanda çalışıyor. Klavye kontrolü olan oyunlarda önce oyun ` +
+      `alanına bir kez tıkla.\n\nBeğenmediğin yeri aşağıya yazıp "düzelt" diyebilirsin.`;
+    $("save").disabled = false;
+    $("revise").disabled = false;
+  } catch (error) {
+    buildHistory.pop();
+    if (error.name === "AbortError") {
+      $("side-head").textContent = "durduruldu";
+      $("side-body").textContent = "Üretim yarıda kesildi.";
+    } else {
+      $("side-head").textContent = "hata";
+      $("side-body").textContent = error.message;
+      toast(error.message, true);
+    }
+  } finally {
+    busy(false, "stop2", "make");
+    $("revise").disabled = !currentHtml;
+  }
+}
+
+$("make").onclick = () => {
+  const spec = $("spec").value.trim();
+  if (!spec) return toast("Önce ne istediğini yaz.", true);
+  buildHistory.length = 0;
+  currentHtml = "";
+  generate(spec, false);
+};
+
+$("revise").onclick = () => {
+  const note = $("tweak").value.trim();
+  if (!note) return toast("Neyi değiştireyim?", true);
+  $("tweak").value = "";
+  generate(
+    "Bu değişikliği uygula ve dosyanın TAMAMINI yeniden ver: " + note,
+    true
+  );
+};
+
+$("stop2").onclick = () => aborter?.abort();
+
+$("save").onclick = () => {
+  const name =
+    ($("spec").value.trim().slice(0, 40).replace(/[^\p{L}\p{N}]+/gu, "-") || "uygulama")
+      .replace(/^-|-$/g, "")
+      .toLowerCase() + ".html";
+  const url = URL.createObjectURL(new Blob([currentHtml], { type: "text/html" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast(name + " indirildi. Çift tıklayınca tarayıcıda açılır.");
+};
+
+/* ---------- anahtar yönetimi ---------- */
+
+$("keystate").onclick = () => {
+  $("keyin").value = apiKey;
+  $("modal").classList.add("on");
+  $("keyin").focus();
+};
+
+$("savekey").onclick = () => {
+  const value = $("keyin").value.trim();
+  if (!value.startsWith("sk-ant-")) {
+    return toast("Anahtar 'sk-ant-' ile başlamalı.", true);
+  }
+  apiKey = value;
+  localStorage.setItem(KEY_STORE, value);
+  $("modal").classList.remove("on");
+  refreshKeyState();
+  toast("Anahtar kaydedildi.");
+};
+
+$("forget").onclick = () => {
+  apiKey = "";
+  localStorage.removeItem(KEY_STORE);
+  $("keyin").value = "";
+  refreshKeyState();
+  toast("Anahtar silindi.");
+};
+
+$("modal").onclick = (e) => {
+  if (e.target === $("modal") && apiKey) $("modal").classList.remove("on");
+};
+
+$("keyin").onkeydown = (e) => {
+  if (e.key === "Enter") $("savekey").click();
+};
+
+/* ---------- açılış ---------- */
+
+refreshKeyState();
+if (!apiKey) $("modal").classList.add("on");
+</script>
+</body>
+</html>
