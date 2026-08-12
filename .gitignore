@@ -1,0 +1,11 @@
+node_modules/
+workspace/
+.env
+*.log
+
+# training
+training/.venv/
+training/out/
+training/data/*.jsonl
+__pycache__/
+*.pyc

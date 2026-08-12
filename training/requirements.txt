@@ -1,0 +1,12 @@
+# Egitim (GPU gerekir; 7B model icin 16 GB VRAM QLoRA ile yeterlidir)
+torch>=2.3
+transformers>=4.44
+datasets>=2.20
+peft>=0.12
+trl>=0.9
+accelerate>=0.33
+bitsandbytes>=0.43     # 4-bit QLoRA icin (yalnizca CUDA)
+
+# Egitilen modeli sunmak icin
+fastapi>=0.112
+uvicorn>=0.30
