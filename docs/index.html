@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPT-MUS · Tek promptla site ve kod uret</title>
+<meta name="description" content="Tek bir cumleden calisir web sitesi ve kod ureten, kurulum gerektirmeyen tarayici uygulamasi.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<style>
+:root {
+  --bg: #0b0d13; --surface: #12151f; --surface-2: #171b28; --border: #232838;
+  --text: #e9ecf5; --muted: #939cb4; --accent: #6d5efc; --accent-2: #23d3a4;
+  --danger: #f0616b; --radius: 12px;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f6fb; --surface: #fff; --surface-2: #f0f2f8; --border: #e0e4ef;
+    --text: #14161f; --muted: #616a82; --accent: #5b4bf5; --accent-2: #0fa27c;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  display: grid; grid-template-columns: 250px 1fr;
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text); overflow: hidden;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* kenar cubugu */
+.sidebar {
+  display: flex; flex-direction: column; gap: 12px; padding: 16px 14px;
+  background: var(--surface); border-right: 1px solid var(--border); overflow: hidden;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand .mark {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(140deg, var(--accent), var(--accent-2)); font-size: 18px;
+}
+.brand strong { display: block; letter-spacing: .04em; }
+.brand small { display: block; color: var(--muted); font-size: 11px; }
+.project-list {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
+  margin: 0 -6px; padding: 0 6px;
+}
+.project-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px;
+  border: 1px solid transparent; border-radius: 9px; background: none; color: var(--muted);
+  font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.project-item:hover, .project-item.active { background: var(--surface-2); color: var(--text); }
+.project-item.active { border-color: var(--border); }
+.project-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.project-item .del { border: 0; background: none; color: var(--muted); cursor: pointer; opacity: 0; padding: 0 2px; }
+.project-item:hover .del { opacity: 1; }
+.project-item .del:hover { color: var(--danger); }
+.sidebar-foot { font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+.sidebar-foot a { color: var(--muted); text-decoration: none; }
+.sidebar-foot a:hover { color: var(--text); }
+
+/* dugmeler */
+.btn {
+  padding: 9px 16px; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface-2); color: var(--text); font: inherit; font-weight: 550;
+  cursor: pointer; white-space: nowrap; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-block { width: 100%; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.ghost { background: transparent; font-size: 13px; padding: 7px 12px; }
+.icon-btn {
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  border-radius: 9px; width: 34px; height: 34px; cursor: pointer; font-size: 16px;
+}
+
+/* ana alan */
+.main { display: grid; grid-template-rows: auto auto 1fr auto; min-width: 0; overflow: hidden; }
+.topbar {
+  display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.topbar h1 {
+  margin: 0; font-size: 15px; font-weight: 600; max-width: 40vw;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.spacer { flex: 1; }
+.only-mobile { display: none; }
+.composer {
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  background: var(--surface); display: grid; gap: 10px;
+}
+.modes { display: flex; gap: 6px; }
+.mode {
+  padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px;
+  background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.mode.active { background: var(--surface-2); color: var(--text); border-color: var(--accent); }
+.prompt-row { display: flex; gap: 10px; }
+.prompt-row textarea {
+  flex: 1; resize: none; padding: 11px 13px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--bg); color: var(--text); font: inherit; line-height: 1.5;
+}
+.prompt-row textarea:focus { border-color: var(--accent); outline: none; }
+.prompt-row .btn { padding-inline: 26px; }
+.examples { display: flex; gap: 6px; flex-wrap: wrap; }
+.examples button {
+  border: 1px dashed var(--border); background: transparent; color: var(--muted);
+  border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 12px; cursor: pointer;
+}
+.examples button:hover { color: var(--text); border-color: var(--accent); border-style: solid; }
+
+/* calisma alani */
+.workspace {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 1px; background: var(--border); min-height: 0;
+}
+.pane { display: grid; grid-template-rows: auto 1fr; background: var(--bg); min-width: 0; min-height: 0; }
+.pane-head {
+  display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+  border-bottom: 1px solid var(--border); background: var(--surface); font-size: 12.5px;
+}
+.pane-title { color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-size: 11px; }
+.status-chip {
+  margin-left: auto; padding: 2px 9px; border-radius: 999px;
+  background: var(--surface-2); color: var(--muted); font-size: 11.5px;
+}
+.status-chip.busy { color: var(--accent-2); }
+.status-chip.error { color: var(--danger); }
+.code-body { display: grid; grid-template-columns: 180px 1fr; min-height: 0; }
+.file-tree {
+  border-right: 1px solid var(--border); overflow-y: auto; padding: 8px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.file-tree button {
+  border: 0; background: none; color: var(--muted); font: inherit; font-size: 12.5px;
+  font-family: var(--mono); text-align: left; padding: 5px 8px; border-radius: 7px;
+  cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.file-tree button:hover, .file-tree button.active { background: var(--surface-2); color: var(--text); }
+.file-tree button.writing { color: var(--accent-2); }
+.code-view {
+  margin: 0; overflow: auto; padding: 14px 16px; font-family: var(--mono);
+  font-size: 12.5px; line-height: 1.6; white-space: pre; tab-size: 2; color: var(--text);
+}
+.preview-body { overflow: auto; padding: 14px; display: grid; }
+.preview-frame {
+  position: relative; justify-self: center; width: 100%; height: 100%;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; background: #fff; transition: width .18s ease;
+}
+.preview-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+.preview-frame .empty {
+  position: absolute; inset: 0; display: grid; align-content: center; justify-items: center;
+  gap: 4px; background: var(--surface); color: var(--muted); text-align: center; padding: 20px;
+}
+.preview-frame .empty strong { color: var(--text); }
+.preview-frame .empty p { margin: 0; }
+.viewport-switch { margin-left: auto; display: flex; gap: 4px; }
+.viewport-switch button {
+  border: 1px solid transparent; background: none; color: var(--muted);
+  font: inherit; font-size: 11.5px; padding: 3px 9px; border-radius: 7px; cursor: pointer;
+}
+.viewport-switch button.active { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.plan-bar {
+  border-top: 1px solid var(--border); background: var(--surface); padding: 10px 18px;
+  font-size: 13px; color: var(--muted); max-height: 120px; overflow-y: auto; white-space: pre-wrap;
+}
+.plan-bar .warn, .plan-bar .err { color: var(--danger); display: block; }
+
+/* ayarlar penceresi */
+dialog {
+  border: 1px solid var(--border); border-radius: 14px; background: var(--surface);
+  color: var(--text); padding: 0; width: min(520px, 92vw); box-shadow: 0 24px 70px rgba(0,0,0,.45);
+}
+dialog::backdrop { background: rgba(0,0,0,.55); }
+.dlg-head { padding: 16px 20px 0; }
+.dlg-head h2 { margin: 0 0 4px; font-size: 17px; }
+.dlg-head p { margin: 0; color: var(--muted); font-size: 13px; }
+.dlg-body { padding: 16px 20px; display: grid; gap: 12px; }
+.field { display: grid; gap: 5px; }
+.field label { font-size: 12.5px; color: var(--muted); }
+.field input, .field select {
+  padding: 9px 11px; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--bg); color: var(--text); font: inherit; font-size: 14px;
+}
+.field small { color: var(--muted); font-size: 11.5px; }
+.notice {
+  border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: 8px; padding: 9px 12px; font-size: 12.5px; color: var(--muted);
+}
+.dlg-foot {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding: 14px 20px; border-top: 1px solid var(--border);
+}
+.hide { display: none !important; }
+
+@media (max-width: 1080px) {
+  .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(0,1fr) minmax(0,1fr); }
+  .code-body { grid-template-columns: 145px 1fr; }
+}
+@media (max-width: 780px) {
+  body { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: 250px; z-index: 20;
+    transform: translateX(-100%); transition: transform .2s ease;
+  }
+  .sidebar.open { transform: none; }
+  .only-mobile { display: grid; place-items: center; }
+  .examples { display: none; }
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <span class="mark">⚡</span>
+    <div>
+      <strong>OPT-MUS</strong>
+      <small id="providerLabel">ayarlanmadi</small>
+    </div>
+  </div>
+
+  <button class="btn btn-block" id="newProject">+ Yeni proje</button>
+  <button class="btn btn-block ghost" id="settingsBtn">Ayarlar</button>
+
+  <div class="project-list" id="projectList"></div>
+
+  <div class="sidebar-foot">
+    <a href="https://github.com/ercanerensayin/OPT-MUS" target="_blank" rel="noreferrer">Kaynak kod</a>
+    <span>Her sey tarayicinda calisir.</span>
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <button class="icon-btn only-mobile" id="menuBtn" aria-label="Menuyu ac">☰</button>
+    <h1 id="projectTitle">Yeni proje</h1>
+    <div class="spacer"></div>
+    <button class="btn ghost" id="downloadBtn" disabled>ZIP indir</button>
+  </header>
+
+  <section class="composer">
+    <div class="modes" role="tablist" aria-label="Uretim turu">
+      <button class="mode active" data-mode="site" role="tab" aria-selected="true">Web sitesi</button>
+      <button class="mode" data-mode="app" role="tab" aria-selected="false">Web uygulamasi</button>
+      <button class="mode" data-mode="code" role="tab" aria-selected="false">Kod / betik</button>
+    </div>
+    <div class="prompt-row">
+      <textarea id="promptInput" rows="2" placeholder="Ornek: kahve dukkanim icin menu, galeri ve rezervasyon formu olan tek sayfalik bir site yap"></textarea>
+      <button class="btn primary" id="generateBtn">Uret</button>
+    </div>
+    <div class="examples" id="examples">
+      <button>Portfolyo sitesi: proje galerisi, hakkimda, iletisim formu</button>
+      <button>Yapilacaklar uygulamasi: filtre, surukle-birak, localStorage</button>
+      <button>Kripto fiyat paneli: arama, siralama, sahte veri grafigi</button>
+      <button>Python ile klasordeki gorselleri toplu yeniden boyutlandiran betik</button>
+    </div>
+  </section>
+
+  <section class="workspace">
+    <div class="pane">
+      <div class="pane-head">
+        <span class="pane-title">Dosyalar</span>
+        <span class="status-chip" id="statusChip">hazir</span>
+      </div>
+      <div class="code-body">
+        <nav class="file-tree" id="fileTree"></nav>
+        <pre class="code-view"><code id="codeView">Uretim baslayinca kod burada akmaya baslar.</code></pre>
+      </div>
+    </div>
+
+    <div class="pane">
+      <div class="pane-head">
+        <span class="pane-title">Canli onizleme</span>
+        <div class="viewport-switch" id="viewportSwitch">
+          <button class="active" data-w="100%">Masaustu</button>
+          <button data-w="768px">Tablet</button>
+          <button data-w="390px">Telefon</button>
+        </div>
+      </div>
+      <div class="preview-body">
+        <div class="preview-frame" id="previewFrame">
+          <iframe id="preview" title="Onizleme" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+          <div class="empty" id="previewEmpty">
+            <p><strong>Henuz bir sey uretilmedi.</strong></p>
+            <p>Yukariya ne istedigini yaz ve <em>Uret</em>'e bas.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="plan-bar" id="planBar" hidden></div>
+</main>
+
+<dialog id="settings">
+  <form method="dialog">
+    <div class="dlg-head">
+      <h2>Ayarlar</h2>
+      <p>Anahtarin yalnizca bu tarayicida saklanir, hicbir sunucuya gonderilmez.</p>
+    </div>
+    <div class="dlg-body">
+      <div class="field">
+        <label for="providerSelect">Saglayici</label>
+        <select id="providerSelect">
+          <option value="anthropic">Claude (Anthropic) — onerilen</option>
+          <option value="openai">OpenAI-uyumlu (OpenAI, OpenRouter, Groq, yerel sunucu…)</option>
+          <option value="mock">Demo — anahtarsiz dene</option>
+        </select>
+      </div>
+
+      <div class="field" id="keyField">
+        <label for="apiKeyInput">API anahtari</label>
+        <input id="apiKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+        <small id="keyHint">console.anthropic.com adresinden alinir.</small>
+      </div>
+
+      <div class="field" id="modelField">
+        <label for="modelInput">Model</label>
+        <input id="modelInput" type="text" spellcheck="false" placeholder="claude-sonnet-5">
+      </div>
+
+      <div class="field hide" id="baseUrlField">
+        <label for="baseUrlInput">API adresi</label>
+        <input id="baseUrlInput" type="text" spellcheck="false" placeholder="https://api.openai.com/v1">
+        <small>Sondaki /chat/completions eklenmeden yazin.</small>
+      </div>
+
+      <div class="notice" id="settingsNotice">
+        Bu sayfa anahtarini dogrudan saglayicinin API'sine gonderir. Kendi kisisel
+        anahtarinla, kendi tarayicinda kullan; anahtarini kimseyle paylasma.
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn ghost" value="cancel">Vazgec</button>
+      <button class="btn primary" id="saveSettings" value="save">Kaydet</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/* ==========================================================================
+   OPT-MUS — tek dosyalik, sunucusuz surum.
+   Tum uretim, ayristirma, onizleme ve ZIP islemi tarayicida yapilir.
+   ========================================================================== */
+
+const $ = (id) => document.getElementById(id);
+const LS_SETTINGS = 'optmus.settings';
+const LS_PROJECTS = 'optmus.projects';
+
+/* ------------------------------------------------------------ promptlar */
+
+const OUTPUT_CONTRACT = `
+CIKTI FORMATI (kesinlikle uy):
+
+<plan>
+Ne insa edecegini 2-4 madde ile ozetle. Kod yazma.
+</plan>
+
+<file path="index.html">
+...dosyanin tam icerigi...
+</file>
+
+Kurallar:
+- Her dosya tam ve calisir halde olmali. "..." veya "geri kalani ayni" gibi
+  kisaltmalar KESINLIKLE yasak.
+- Dosya iceriklerini markdown kod bloguna sarma.
+- <file> etiketleri disina aciklama yazma.
+- Yollar proje kokune gore goreli olmali; basta / veya ../ olmamali.
+`.trim();
+
+const DESIGN_RULES = `
+TASARIM STANDARDI:
+- Derleme adimi olmayan, tarayicida dogrudan calisan HTML/CSS/JS uret.
+  Giris noktasi her zaman index.html olmali.
+- CSS degiskenleri ile tasarim sistemi kur; acik ve koyu tema destegi ver.
+- Gercekci metin ve ornek veri kullan; "Lorem ipsum" ve "Baslik buraya" yasak.
+- Responsive olsun; 320px'e kadar yatay kaydirma olmasin.
+- Erisilebilirlik: semantik etiketler, label, alt metni, gorunur odak halkasi.
+- Etkilesim gercekten calissin: menu acilsin, sekme gecsin, form dogrulansin.
+- Gorsel gerektiginde harici URL yerine satir ici SVG veya CSS gradyan kullan.
+- Harici kutuphaneye yalnizca gercekten gerekliyse basvur.
+`.trim();
+
+function systemPrompt(mode) {
+  const role = mode === 'code'
+    ? 'Sen kidemli bir yazilim muhendisisin. Istenen programi eksiksiz, calisir ve okunabilir yazarsin. Uygun oldugunda README ve testleri de uretirsin.'
+    : 'Sen kidemli bir urun muhendisi ve arayuz tasarimcisisin. Tek bir cumleden yola cikarak yayina hazir, guzel gorunen web siteleri ve uygulamalari uretirsin.';
+  return [
+    role,
+    mode === 'code' ? '' : DESIGN_RULES,
+    OUTPUT_CONTRACT,
+    'Once <plan> yaz, sonra dosyalari uret. Soru sorma, dogrudan uret. Kullanici az bilgi verdiyse eksikleri kendin makul sekilde tamamla.',
+  ].filter(Boolean).join('\n\n');
+}
+
+function buildPrompt(userPrompt, mode) {
+  const kind = mode === 'code'
+    ? 'Asagidaki istegi karsilayan projeyi yaz.'
+    : 'Asagidaki istegi karsilayan web projesini bastan uret.';
+  return kind + '\n\nISTEK:\n' + userPrompt.trim();
+}
+
+function buildEditPrompt(userPrompt, files) {
+  const snapshot = [...files.entries()]
+    .map(([path, content]) => '<file path="' + path + '">\n' + content + '\n<\/file>')
+    .join('\n\n');
+  return [
+    'Asagida projenin su anki hali var.', '', snapshot, '',
+    'DEGISIKLIK ISTEGI:', userPrompt.trim(), '',
+    'Yalnizca degistirdigin veya yeni ekledigin dosyalari dondur; dokunmadiklarini tekrar yazma. Donduklerini tam icerikleriyle, ayni <file> formatinda ver. Mevcut tasarim dilini koru.',
+  ].join('\n');
+}
+
+/* -------------------------------------------------- akisli blok ayristirici */
+
+function isSafePath(p) {
+  if (!p || p.length > 200 || p.includes('\0')) return false;
+  if (p.startsWith('/') || p.startsWith('\\') || /^[a-zA-Z]:/.test(p)) return false;
+  return !p.split(/[\\/]/).some((seg) => seg === '..' || seg === '');
+}
+
+function stripCodeFence(text) {
+  const trimmed = text.replace(/^\n+/, '').replace(/\s+$/, '');
+  const m = /^```[a-zA-Z0-9#+._-]*\n([\s\S]*?)\n?```$/.exec(trimmed);
+  return m ? m[1] : trimmed;
+}
+
+const FILE_OPEN = /<file\s+path\s*=\s*"([^"]+)"\s*>/i;
+const PLAN_CLOSE = '<\/plan>';
+const FILE_CLOSE = '<\/file>';
+
+class FileBlockParser {
+  constructor(handlers = {}) {
+    this.h = handlers; this.buf = ''; this.state = 'outside';
+    this.path = null; this.content = ''; this.plan = ''; this.files = [];
+  }
+  feed(chunk) {
+    this.buf += chunk;
+    let go = true;
+    while (go) go = this.state === 'outside' ? this.stepOutside() : this.stepInside();
+  }
+  end() {
+    if (this.state !== 'outside') this.close(this.buf, true);
+    this.buf = '';
+    return { plan: this.plan.trim(), files: this.files };
+  }
+  stepOutside() {
+    const planAt = this.buf.indexOf('<plan>');
+    const m = FILE_OPEN.exec(this.buf);
+    const fileAt = m ? m.index : -1;
+    if (planAt !== -1 && (fileAt === -1 || planAt < fileAt)) {
+      this.buf = this.buf.slice(planAt + 6); this.state = 'plan'; return true;
+    }
+    if (fileAt !== -1) {
+      this.buf = this.buf.slice(fileAt + m[0].length).replace(/^\r?\n/, '');
+      this.path = m[1].trim(); this.content = ''; this.state = 'file';
+      this.h.onFileStart?.(this.path);
+      return true;
+    }
+    const lastLt = this.buf.lastIndexOf('<');
+    this.buf = lastLt === -1 ? '' : this.buf.slice(lastLt);
+    return false;
+  }
+  stepInside() {
+    const closeTag = this.state === 'plan' ? PLAN_CLOSE : FILE_CLOSE;
+    const at = this.buf.indexOf(closeTag);
+    if (at !== -1) {
+      const content = this.buf.slice(0, at);
+      this.buf = this.buf.slice(at + closeTag.length);
+      this.close(content, false);
+      return true;
+    }
+    const keep = closeTag.length - 1;
+    if (this.buf.length > keep) {
+      const emit = this.buf.slice(0, this.buf.length - keep);
+      this.buf = this.buf.slice(this.buf.length - keep);
+      this.emit(emit);
+    }
+    return false;
+  }
+  emit(text) {
+    if (!text) return;
+    if (this.state === 'plan') { this.plan += text; this.h.onPlan?.(text); }
+    else { this.content += text; this.h.onFileDelta?.(this.path, text); }
+  }
+  close(tail, truncated) {
+    this.emit(tail);
+    if (this.state === 'file' && this.path && isSafePath(this.path)) {
+      const file = { path: this.path, content: stripCodeFence(this.content), truncated };
+      this.files.push(file);
+      this.h.onFileEnd?.(file);
+    }
+    this.state = 'outside'; this.path = null; this.content = '';
+  }
+}
+
+/* ------------------------------------------------------------ saglayicilar */
+
+async function* readSSE(response) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n')) !== -1) {
+      yield buf.slice(0, nl).replace(/\r$/, '');
+      buf = buf.slice(nl + 1);
+    }
+  }
+}
+
+async function checkResponse(response, name) {
+  if (response.ok) return;
+  let detail = '';
+  try { detail = (await response.text()).slice(0, 400); } catch {}
+  if (response.status === 401) throw new Error(name + ': API anahtari gecersiz veya eksik.');
+  throw new Error(name + ' hatasi (' + response.status + '): ' + (detail || response.statusText));
+}
+
+async function* streamAnthropic(settings, system, prompt, signal) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST', signal,
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': settings.apiKey,
+      'anthropic-version': '2023-06-01',
+      // Tarayicidan dogrudan cagri icin gereklidir.
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: settings.model || 'claude-sonnet-5',
+      max_tokens: 16000, temperature: 0.4, system, stream: true,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  await checkResponse(response, 'Anthropic');
+  for await (const line of readSSE(response)) {
+    if (!line.startsWith('data:')) continue;
+    const payload = line.slice(5).trim();
+    if (!payload || payload === '[DONE]') continue;
+    let event; try { event = JSON.parse(payload); } catch { continue; }
+    if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') yield event.delta.text;
+    else if (event.type === 'error') throw new Error('Anthropic: ' + (event.error?.message || 'akis hatasi'));
+  }
+}
+
+async function* streamOpenAI(settings, system, prompt, signal) {
+  const base = (settings.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+  const response = await fetch(base + '/chat/completions', {
+    method: 'POST', signal,
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (settings.apiKey || 'local') },
+    body: JSON.stringify({
+      model: settings.model || 'gpt-4o-mini',
+      max_tokens: 16000, temperature: 0.4, stream: true,
+      messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+    }),
+  });
+  await checkResponse(response, 'OpenAI-uyumlu saglayici');
+  for await (const line of readSSE(response)) {
+    if (!line.startsWith('data:')) continue;
+    const payload = line.slice(5).trim();
+    if (!payload || payload === '[DONE]') continue;
+    let event; try { event = JSON.parse(payload); } catch { continue; }
+    const delta = event.choices?.[0]?.delta?.content;
+    if (delta) yield delta;
+  }
+}
+
+const MOCK = '<plan>\n- Tek sayfalik tanitim sitesi kurulacak.\n- Acik/koyu tema destekli CSS degisken sistemi eklenecek.\n- Mobil menu ve form dogrulamasi JS ile calisir hale getirilecek.\n<\/plan>\n\n' +
+'<file path="index.html">\n<!doctype html>\n<html lang="tr">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>Demo</title>\n<link rel="stylesheet" href="style.css">\n<\/head>\n<body>\n<header class="site-header">\n  <a class="logo" href="#">OPT<span>MUS<\/span><\/a>\n  <nav><a href="#ozellikler">Ozellikler<\/a><a href="#iletisim">Iletisim<\/a><\/nav>\n<\/header>\n<main>\n  <section class="hero">\n    <h1>Tek cumleyle calisan bir site<\/h1>\n    <p>Bu sayfa demo modda uretildi. Gercek model icin Ayarlar bolumunden anahtarini gir.<\/p>\n    <a class="btn" href="#ozellikler">Kesfet<\/a>\n  <\/section>\n  <section id="ozellikler" class="grid">\n    <article><h2>Akisli uretim<\/h2><p>Kod, model yazarken aninda ekrana duser.<\/p><\/article>\n    <article><h2>Canli onizleme<\/h2><p>Uretilen proje aninda calisir.<\/p><\/article>\n    <article><h2>ZIP indirme<\/h2><p>Projeyi tek tikla bilgisayarina al.<\/p><\/article>\n  <\/section>\n  <section id="iletisim">\n    <h2>Iletisim<\/h2>\n    <form id="contact" novalidate>\n      <label for="email">E-posta<\/label>\n      <input id="email" name="email" type="email" required placeholder="ornek@site.com">\n      <button class="btn" type="submit">Gonder<\/button>\n      <p class="status" role="status"><\/p>\n    <\/form>\n  <\/section>\n<\/main>\n<footer>OPT-MUS ile uretildi.<\/footer>\n<script src="app.js"><\/script>\n<\/body>\n<\/html>\n<\/file>\n\n' +
+'<file path="style.css">\n:root { --bg:#f7f8fb; --surface:#fff; --text:#14161c; --muted:#5b6172; --accent:#4f46e5; --border:#e4e6ef; }\n@media (prefers-color-scheme: dark) {\n  :root { --bg:#0e1016; --surface:#161a23; --text:#eef0f6; --muted:#a2a9bd; --accent:#8b85ff; --border:#262c3a; }\n}\n* { box-sizing: border-box; }\nbody { margin:0; font:16px/1.6 system-ui, sans-serif; background:var(--bg); color:var(--text); }\n.site-header { display:flex; gap:16px; align-items:center; padding:16px 24px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; }\n.logo { font-weight:700; text-decoration:none; color:var(--text); }\n.logo span { color:var(--accent); }\nnav { margin-left:auto; display:flex; gap:18px; }\nnav a { color:var(--muted); text-decoration:none; }\nnav a:hover { color:var(--text); }\n.hero { padding:88px 24px; text-align:center; }\n.hero h1 { font-size:clamp(2rem,5vw,3.2rem); margin:0 0 12px; }\n.hero p { color:var(--muted); max-width:620px; margin:0 auto 24px; }\n.btn { display:inline-block; padding:12px 22px; border:0; border-radius:999px; background:var(--accent); color:#fff; text-decoration:none; font-weight:600; cursor:pointer; }\n.grid { display:grid; gap:16px; padding:24px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); max-width:1040px; margin:0 auto; }\n.grid article { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; }\n.grid h2 { margin-top:0; font-size:1.1rem; }\n#iletisim { max-width:480px; margin:48px auto 80px; padding:0 24px; }\nform { display:grid; gap:10px; }\ninput { padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text); }\n.status { min-height:22px; color:var(--muted); margin:0; }\nfooter { padding:24px; text-align:center; color:var(--muted); border-top:1px solid var(--border); }\n<\/file>\n\n' +
+'<file path="app.js">\nconst form = document.getElementById("contact");\nconst status = form.querySelector(".status");\n\nform.addEventListener("submit", (event) => {\n  event.preventDefault();\n  const email = form.email.value.trim();\n  const valid = /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email);\n  status.textContent = valid ? "Tesekkurler, kaydedildi." : "Gecerli bir e-posta girin.";\n  status.style.color = valid ? "var(--accent)" : "#e5484d";\n  if (valid) form.reset();\n});\n<\/file>';
+
+async function* streamMock() {
+  for (const piece of MOCK.match(/[\s\S]{1,50}/g) || []) {
+    await new Promise((r) => setTimeout(r, 10));
+    yield piece;
+  }
+}
+
+function streamText(settings, system, prompt, signal) {
+  if (settings.provider === 'anthropic') return streamAnthropic(settings, system, prompt, signal);
+  if (settings.provider === 'openai') return streamOpenAI(settings, system, prompt, signal);
+  return streamMock();
+}
+
+/* ------------------------------------------------------------------- ZIP */
+
+const CRC_TABLE = (() => {
+  const table = new Int32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[i] = c;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let c = -1;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ -1) >>> 0;
+}
+
+function createZip(files) {
+  const encoder = new TextEncoder();
+  const now = new Date();
+  const time = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const chunks = [], centrals = [];
+  let offset = 0;
+
+  for (const [path, content] of files) {
+    const name = encoder.encode(path.replace(/\\/g, '/'));
+    const data = encoder.encode(content);
+    const crc = crc32(data);
+
+    const local = new DataView(new ArrayBuffer(30 + name.length));
+    local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true);
+    local.setUint16(6, 0x0800, true); local.setUint16(8, 0, true);
+    local.setUint16(10, time, true); local.setUint16(12, date, true);
+    local.setUint32(14, crc, true); local.setUint32(18, data.length, true);
+    local.setUint32(22, data.length, true); local.setUint16(26, name.length, true);
+    local.setUint16(28, 0, true);
+    new Uint8Array(local.buffer).set(name, 30);
+
+    const central = new DataView(new ArrayBuffer(46 + name.length));
+    central.setUint32(0, 0x02014b50, true); central.setUint16(4, 20, true);
+    central.setUint16(6, 20, true); central.setUint16(8, 0x0800, true);
+    central.setUint16(10, 0, true); central.setUint16(12, time, true);
+    central.setUint16(14, date, true); central.setUint32(16, crc, true);
+    central.setUint32(20, data.length, true); central.setUint32(24, data.length, true);
+    central.setUint16(28, name.length, true); central.setUint32(42, offset, true);
+    new Uint8Array(central.buffer).set(name, 46);
+
+    chunks.push(new Uint8Array(local.buffer), data);
+    centrals.push(new Uint8Array(central.buffer));
+    offset += local.byteLength + data.length;
+  }
+
+  const centralSize = centrals.reduce((sum, c) => sum + c.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, files.size, true); end.setUint16(10, files.size, true);
+  end.setUint32(12, centralSize, true); end.setUint32(16, offset, true);
+
+  return new Blob([...chunks, ...centrals, new Uint8Array(end.buffer)], { type: 'application/zip' });
+}
+
+/* ------------------------------------------------- onizleme icin paketleme */
+
+function bundleForPreview(files) {
+  const index = files.get('index.html');
+  if (index == null) return null;
+  const find = (raw) => {
+    const path = raw.replace(/^\.?\//, '').split(/[?#]/)[0];
+    return files.has(path) ? files.get(path) : null;
+  };
+  let html = index.replace(/<link\b[^>]*>/gi, (tag) => {
+    if (!/rel\s*=\s*["']?stylesheet/i.test(tag)) return tag;
+    const m = /href\s*=\s*["']([^"']+)["']/i.exec(tag);
+    const css = m && find(m[1]);
+    return css != null ? '<style>\n' + css + '\n<\/style>' : tag;
+  });
+  html = html.replace(/<script\b[^>]*src\s*=\s*["']([^"']+)["'][^>]*>\s*<\/script>/gi, (tag, src) => {
+    const js = find(src);
+    if (js == null) return tag;
+    const type = /type\s*=\s*["']module["']/i.test(tag) ? ' type="module"' : '';
+    return '<script' + type + '>\n' + js + '\n<\/script>';
+  });
+  return html;
+}
+
+/* --------------------------------------------------------------- ayarlar */
+
+const DEFAULT_MODELS = { anthropic: 'claude-sonnet-5', openai: 'gpt-4o-mini', mock: 'demo' };
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_SETTINGS) || '{}');
+    return { provider: 'mock', apiKey: '', model: '', baseUrl: '', ...saved };
+  } catch {
+    return { provider: 'mock', apiKey: '', model: '', baseUrl: '' };
+  }
+}
+
+function saveSettings(settings) {
+  localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
+}
+
+/* --------------------------------------------------------------- projeler */
+
+function loadProjects() {
+  try { return JSON.parse(localStorage.getItem(LS_PROJECTS) || '[]'); } catch { return []; }
+}
+
+function persistProjects(projects) {
+  try {
+    localStorage.setItem(LS_PROJECTS, JSON.stringify(projects));
+  } catch {
+    setPlan('', { warnings: ['Tarayici depolamasi doldu; eski projeleri silin.'] });
+  }
+}
+
+/* ------------------------------------------------------------------ durum */
+
+const state = {
+  settings: loadSettings(),
+  projects: loadProjects(),
+  projectId: null,
+  mode: 'site',
+  files: new Map(),
+  active: null,
+  busy: false,
+};
+
+const el = {};
+for (const id of ['sidebar','menuBtn','providerLabel','projectList','newProject','settingsBtn',
+  'projectTitle','downloadBtn','promptInput','generateBtn','examples','fileTree','codeView',
+  'statusChip','preview','previewEmpty','previewFrame','viewportSwitch','planBar','settings',
+  'providerSelect','apiKeyInput','modelInput','baseUrlInput','keyField','baseUrlField','keyHint',
+  'saveSettings']) el[id] = $(id);
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function setStatus(text, kind = '') {
+  el.statusChip.textContent = text;
+  el.statusChip.className = 'status-chip ' + kind;
+}
+
+function setBusy(busy) {
+  state.busy = busy;
+  el.generateBtn.disabled = busy;
+  el.generateBtn.textContent = busy ? 'Uretiliyor…' : state.projectId ? 'Guncelle' : 'Uret';
+  el.promptInput.disabled = busy;
+}
+
+function setPlan(text, { warnings = [], error = '' } = {}) {
+  const parts = [];
+  if (text && text.trim()) parts.push(escapeHtml(text.trim()));
+  for (const w of warnings) parts.push('<span class="warn">! ' + escapeHtml(w) + '<\/span>');
+  if (error) parts.push('<span class="err">Hata: ' + escapeHtml(error) + '<\/span>');
+  el.planBar.innerHTML = parts.join('\n');
+  el.planBar.hidden = parts.length === 0;
+}
+
+function renderTree(writingPath = null) {
+  el.fileTree.innerHTML = '';
+  for (const path of state.files.keys()) {
+    const button = document.createElement('button');
+    button.textContent = path;
+    button.title = path;
+    if (path === state.active) button.classList.add('active');
+    if (path === writingPath) button.classList.add('writing');
+    button.addEventListener('click', () => showFile(path));
+    el.fileTree.appendChild(button);
+  }
+}
+
+function showFile(path) {
+  state.active = path;
+  el.codeView.textContent = state.files.get(path) ?? '';
+  renderTree();
+}
+
+function refreshPreview() {
+  const html = bundleForPreview(state.files);
+  if (html == null) return;
+  el.preview.srcdoc = html;
+  el.previewEmpty.style.display = 'none';
+}
+
+function resetWorkspace() {
+  state.files = new Map();
+  state.active = null;
+  el.fileTree.innerHTML = '';
+  el.codeView.textContent = 'Uretim baslayinca kod burada akmaya baslar.';
+  el.preview.removeAttribute('srcdoc');
+  el.previewEmpty.style.display = '';
+  el.downloadBtn.disabled = true;
+  setPlan('');
+}
+
+function renderProjects() {
+  el.projectList.innerHTML = '';
+  for (const project of state.projects) {
+    const row = document.createElement('div');
+    row.className = 'project-item' + (project.id === state.projectId ? ' active' : '');
+
+    const label = document.createElement('span');
+    label.textContent = project.title || 'Isimsiz proje';
+    label.title = project.title || '';
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '×';
+    del.title = 'Projeyi sil';
+    del.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (!confirm('Bu proje silinsin mi?')) return;
+      state.projects = state.projects.filter((p) => p.id !== project.id);
+      persistProjects(state.projects);
+      if (state.projectId === project.id) newProject();
+      else renderProjects();
+    });
+
+    row.addEventListener('click', () => openProject(project.id));
+    row.append(label, del);
+    el.projectList.appendChild(row);
+  }
+}
+
+function openProject(id) {
+  if (state.busy) return;
+  const project = state.projects.find((p) => p.id === id);
+  if (!project) return;
+
+  state.projectId = project.id;
+  state.mode = project.mode;
+  state.files = new Map(Object.entries(project.files || {}));
+  el.projectTitle.textContent = project.title || 'Proje';
+  el.downloadBtn.disabled = state.files.size === 0;
+
+  document.querySelectorAll('.mode').forEach((b) => {
+    const on = b.dataset.mode === project.mode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+
+  renderTree();
+  const first = [...state.files.keys()][0];
+  if (first) showFile(state.files.has('index.html') ? 'index.html' : first);
+  refreshPreview();
+  setPlan('');
+  setStatus('yuklendi');
+  setBusy(false);
+  el.sidebar.classList.remove('open');
+  renderProjects();
+}
+
+function newProject() {
+  state.projectId = null;
+  el.projectTitle.textContent = 'Yeni proje';
+  el.promptInput.value = '';
+  resetWorkspace();
+  setStatus('hazir');
+  setBusy(false);
+  renderProjects();
+}
+
+function saveCurrentProject(prompt) {
+  const files = Object.fromEntries(state.files);
+  let project = state.projects.find((p) => p.id === state.projectId);
+  if (!project) {
+    project = {
+      id: Math.random().toString(36).slice(2, 10),
+      title: prompt.slice(0, 60),
+      mode: state.mode,
+      files,
+      updatedAt: Date.now(),
+    };
+    state.projectId = project.id;
+    state.projects.unshift(project);
+    el.projectTitle.textContent = project.title;
+  } else {
+    project.files = files;
+    project.updatedAt = Date.now();
+  }
+  persistProjects(state.projects);
+  renderProjects();
+}
+
+/* --------------------------------------------------------------- uretim */
+
+async function generate() {
+  if (state.busy) return;
+  const prompt = el.promptInput.value.trim();
+  if (!prompt) { el.promptInput.focus(); return; }
+
+  const settings = state.settings;
+  if (settings.provider !== 'mock' && !settings.apiKey) {
+    setPlan('', { error: 'API anahtari girilmemis. Ayarlar bolumunden ekleyin (ya da demo modu secin).' });
+    el.settings.showModal();
+    return;
+  }
+
+  setBusy(true);
+  setStatus('baglaniyor…', 'busy');
+  setPlan('');
+
+  const isEdit = state.files.size > 0;
+  if (!isEdit) resetWorkspace();
+
+  const system = systemPrompt(state.mode);
+  const message = isEdit ? buildEditPrompt(prompt, state.files) : buildPrompt(prompt, state.mode);
+
+  let plan = '';
+  const parser = new FileBlockParser({
+    onPlan: (delta) => { plan += delta; setPlan(plan); },
+    onFileStart: (path) => {
+      state.files.set(path, '');
+      state.active = path;
+      el.codeView.textContent = '';
+      renderTree(path);
+      setStatus('yaziliyor: ' + path, 'busy');
+    },
+    onFileDelta: (path, delta) => {
+      state.files.set(path, (state.files.get(path) || '') + delta);
+      if (state.active === path) {
+        el.codeView.textContent += delta;
+        el.codeView.parentElement.scrollTop = el.codeView.parentElement.scrollHeight;
+      }
+    },
+    onFileEnd: (file) => {
+      state.files.set(file.path, file.content);
+      if (state.active === file.path) el.codeView.textContent = file.content;
+      renderTree();
+    },
+  });
+
+  try {
+    setStatus(isEdit ? 'guncelleniyor…' : 'uretiliyor…', 'busy');
+    for await (const delta of streamText(settings, system, message)) parser.feed(delta);
+    const { files } = parser.end();
+
+    const warnings = [];
+    if (!files.length) warnings.push('Model hic dosya uretmedi. Istegi biraz daha acik yazip tekrar deneyin.');
+    if (files.some((f) => f.truncated)) warnings.push('Bir dosya yarim kalmis olabilir (token siniri).');
+    if (state.mode !== 'code' && !state.files.has('index.html')) warnings.push('index.html uretilmedi; onizleme calismayabilir.');
+
+    setPlan(plan, { warnings });
+    setStatus('bitti · ' + state.files.size + ' dosya');
+
+    if (state.files.size) {
+      saveCurrentProject(prompt);
+      el.downloadBtn.disabled = false;
+      refreshPreview();
+      el.promptInput.value = '';
+    }
+  } catch (error) {
+    const message = /Failed to fetch|NetworkError|Load failed/i.test(error.message)
+      ? 'Saglayiciya ulasilamadi. Anahtari, adresi ve internet baglantisini kontrol edin. ' +
+        'Sayfayi dosyadan actiysaniz tarayici istegi engellemis olabilir; bir adres uzerinden acmayi deneyin.'
+      : error.message;
+    setStatus('hata', 'error');
+    setPlan(plan, { error: message });
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* ---------------------------------------------------------------- olaylar */
+
+el.generateBtn.addEventListener('click', generate);
+el.newProject.addEventListener('click', newProject);
+el.menuBtn.addEventListener('click', () => el.sidebar.classList.toggle('open'));
+
+el.promptInput.addEventListener('keydown', (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') generate();
+});
+
+el.downloadBtn.addEventListener('click', () => {
+  if (!state.files.size) return;
+  const project = state.projects.find((p) => p.id === state.projectId);
+  const name = ((project?.title) || 'proje').replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 40) || 'proje';
+  const url = URL.createObjectURL(createZip(state.files));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name + '.zip';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+});
+
+el.examples.addEventListener('click', (event) => {
+  if (event.target.tagName !== 'BUTTON') return;
+  el.promptInput.value = event.target.textContent;
+  el.promptInput.focus();
+});
+
+document.querySelectorAll('.mode').forEach((button) => {
+  button.addEventListener('click', () => {
+    if (state.busy || state.projectId) return;
+    state.mode = button.dataset.mode;
+    document.querySelectorAll('.mode').forEach((b) => {
+      const on = b === button;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+  });
+});
+
+el.viewportSwitch.addEventListener('click', (event) => {
+  if (event.target.tagName !== 'BUTTON') return;
+  el.previewFrame.style.width = event.target.dataset.w;
+  el.viewportSwitch.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === event.target));
+});
+
+/* ---------------------------------------------------------------- ayarlar */
+
+function syncSettingsForm() {
+  const provider = el.providerSelect.value;
+  el.keyField.classList.toggle('hide', provider === 'mock');
+  el.modelInput.parentElement.classList.toggle('hide', provider === 'mock');
+  el.baseUrlField.classList.toggle('hide', provider !== 'openai');
+  el.keyHint.textContent = provider === 'anthropic'
+    ? 'console.anthropic.com adresinden alinir.'
+    : 'Kullandiginiz servisin panelinden alinir. Yerel sunucu icin herhangi bir deger yeterli.';
+  el.modelInput.placeholder = DEFAULT_MODELS[provider] || '';
+}
+
+function updateProviderLabel() {
+  const { provider, model } = state.settings;
+  const name = { anthropic: 'Claude', openai: 'OpenAI-uyumlu', mock: 'demo modu' }[provider] || provider;
+  el.providerLabel.textContent = provider === 'mock' ? name : name + ' · ' + (model || DEFAULT_MODELS[provider]);
+}
+
+el.settingsBtn.addEventListener('click', () => {
+  el.providerSelect.value = state.settings.provider;
+  el.apiKeyInput.value = state.settings.apiKey;
+  el.modelInput.value = state.settings.model;
+  el.baseUrlInput.value = state.settings.baseUrl;
+  syncSettingsForm();
+  el.settings.showModal();
+});
+
+el.providerSelect.addEventListener('change', syncSettingsForm);
+
+el.settings.addEventListener('close', () => {
+  if (el.settings.returnValue !== 'save') return;
+  state.settings = {
+    provider: el.providerSelect.value,
+    apiKey: el.apiKeyInput.value.trim(),
+    model: el.modelInput.value.trim(),
+    baseUrl: el.baseUrlInput.value.trim(),
+  };
+  saveSettings(state.settings);
+  updateProviderLabel();
+  setStatus('hazir');
+  setPlan('');
+});
+
+/* ----------------------------------------------------------------- acilis */
+
+updateProviderLabel();
+renderProjects();
+if (!localStorage.getItem(LS_SETTINGS)) {
+  setPlan('Demo modundasin: anahtarsiz, sabit bir ornek uretilir. Gercek uretim icin Ayarlar bolumunden saglayicini ve anahtarini gir.');
+}
+</script>
+</body>
+</html>

@@ -25,7 +25,25 @@ ve ürettiklerini veri olarak toplayıp **kendi modelini eğitmen** için hazır
 - **Üç mod.** Web sitesi · Web uygulaması · Kod/betik (Python, Node, Bash…).
 - **Sağlayıcı bağımsız.** Claude, OpenAI-uyumlu her servis, Ollama — veya kendi eğittiğin model.
 
-## Hızlı başlangıç
+## İki sürüm var
+
+| | Kurulumsuz sürüm | Tam sürüm |
+|---|---|---|
+| Dosya | `docs/index.html` (tek dosya) | `server/` + `web/` |
+| Gereksinim | Sadece tarayıcı | Node.js 20+ |
+| Anahtar nerede | Senin tarayıcının `localStorage`'ında | Sunucudaki `.env` |
+| Projeler nerede | Tarayıcı depolamasında | Diskte, `workspace/` |
+| Veri toplama / eğitim | Yok | Var |
+
+Sadece kullanmak istiyorsan **kurulumsuz sürüm** yeter: `docs/index.html` dosyasına
+çift tıkla, açılır. Ya da GitHub Pages'e koyup gerçek bir adresten çalıştır
+(Settings → Pages → Source: `main` / `/docs`).
+
+> Kurulumsuz sürüm anahtarını doğrudan sağlayıcının API'sine gönderir ve yalnızca
+> senin tarayıcında saklar. Kişisel kullanım için tasarlandı — anahtarının yazılı
+> olduğu tarayıcıyı başkasıyla paylaşma.
+
+## Hızlı başlangıç (tam sürüm)
 
 ```bash
 npm install
@@ -79,6 +97,7 @@ server/
   store.js       proje kalıcılığı, sürüm geçmişi, veri toplama
   zip.js         bağımlılıksız ZIP üretici
 web/             arayüz (derleme adımı yok, saf HTML/CSS/JS)
+docs/index.html  kurulumsuz sürüm — tüm uygulama tek dosyada, tarayıcıda çalışır
 training/        veri damıtma, veri kümesi, QLoRA eğitimi, model sunucusu
 test/            ayrıştırıcı ve ZIP birim testleri
 ```
