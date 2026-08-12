@@ -284,7 +284,7 @@ dialog::backdrop { background: rgba(0,0,0,.55); }
       </div>
       <div class="preview-body">
         <div class="preview-frame" id="previewFrame">
-          <iframe id="preview" title="Onizleme" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+          <iframe id="preview" title="Onizleme" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"></iframe>
           <div class="empty" id="previewEmpty">
             <p><strong>Henuz bir sey uretilmedi.</strong></p>
             <p>Yukariya ne istedigini yaz ve <em>Uret</em>'e bas.</p>
@@ -657,6 +657,53 @@ function createZip(files) {
 
 /* ------------------------------------------------- onizleme icin paketleme */
 
+/*
+ * Onizleme penceresine enjekte edilen gezinme yardimcisi.
+ *
+ * Onizleme, kendi adresi olmayan bir belge icinde calisir; bu yuzden tarayici
+ * "#bolum" baglantisini sayfa ici kaydirma yerine yeni bir sayfa yuklemesi
+ * sayar ve guvenlik kisiti bunu engeller. Ayni sebeple dis baglantilar da
+ * sessizce olu kalir. Asagidaki kod ikisini de elle halleder; uretilen
+ * projenin indirilen dosyalarina karismaz, yalnizca onizlemeye eklenir.
+ */
+const PREVIEW_NAV_HELPER = `
+<script>
+(function () {
+  document.addEventListener('click', function (event) {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+    if (!link) return;
+
+    var href = link.getAttribute('href') || '';
+
+    if (href.charAt(0) === '#') {
+      event.preventDefault();
+      if (href === '#' || href.toLowerCase() === '#top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      var id = href.slice(1);
+      var target = null;
+      try { target = document.getElementById(decodeURIComponent(id)); } catch (e) {}
+      if (!target) target = document.getElementById(id) || document.getElementsByName(id)[0];
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (target.hasAttribute && !target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+        if (target.focus) target.focus({ preventScroll: true });
+      }
+      return;
+    }
+
+    if (/^https?:\\/\\//i.test(href)) {
+      event.preventDefault();
+      window.open(href, '_blank', 'noopener');
+    }
+  });
+})();
+<\/script>`;
+
 function bundleForPreview(files) {
   const index = files.get('index.html');
   if (index == null) return null;
@@ -676,7 +723,10 @@ function bundleForPreview(files) {
     const type = /type\s*=\s*["']module["']/i.test(tag) ? ' type="module"' : '';
     return '<script' + type + '>\n' + js + '\n<\/script>';
   });
-  return html;
+
+  return /<\/body>/i.test(html)
+    ? html.replace(/<\/body>/i, PREVIEW_NAV_HELPER + '\n<\/body>')
+    : html + PREVIEW_NAV_HELPER;
 }
 
 /* --------------------------------------------------------------- ayarlar */
@@ -774,10 +824,22 @@ function showFile(path) {
   renderTree();
 }
 
+// Onizleme icin blob adresi kullanilir, srcdoc degil: srcdoc ile yuklenen
+// belgenin kendi adresi olmadigindan "#bolum" gibi sayfa ici baglantilar ana
+// sayfanin adresine gore cozumlenir ve calismaz.
+let previewUrl = null;
+
+function releasePreviewUrl() {
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = null;
+}
+
 function refreshPreview() {
   const html = bundleForPreview(state.files);
   if (html == null) return;
-  el.preview.srcdoc = html;
+  releasePreviewUrl();
+  previewUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  el.preview.src = previewUrl;
   el.previewEmpty.style.display = 'none';
 }
 
@@ -786,7 +848,8 @@ function resetWorkspace() {
   state.active = null;
   el.fileTree.innerHTML = '';
   el.codeView.textContent = 'Uretim baslayinca kod burada akmaya baslar.';
-  el.preview.removeAttribute('srcdoc');
+  releasePreviewUrl();
+  el.preview.removeAttribute('src');
   el.previewEmpty.style.display = '';
   el.downloadBtn.disabled = true;
   setPlan('');
