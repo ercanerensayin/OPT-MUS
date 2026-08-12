@@ -11,12 +11,16 @@
   --bg: #0b0d13; --surface: #12151f; --surface-2: #171b28; --border: #232838;
   --text: #e9ecf5; --muted: #939cb4; --accent: #6d5efc; --accent-2: #23d3a4;
   --danger: #f0616b; --radius: 12px;
+  --warn-bg: rgba(245,165,36,.10); --warn-border: rgba(245,165,36,.38);
+  --warn-text: #d9c49c; --warn-strong: #f5a524; --warn-ring: rgba(245,165,36,.16);
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f4f6fb; --surface: #fff; --surface-2: #f0f2f8; --border: #e0e4ef;
     --text: #14161f; --muted: #616a82; --accent: #5b4bf5; --accent-2: #0fa27c;
+    --warn-bg: #fff8e9; --warn-border: #efd9a6;
+    --warn-text: #6b5528; --warn-strong: #a96c07; --warn-ring: rgba(169,108,7,.13);
   }
 }
 * { box-sizing: border-box; }
@@ -91,6 +95,20 @@ body {
 .composer {
   padding: 14px 18px; border-bottom: 1px solid var(--border);
   background: var(--surface); display: grid; gap: 10px;
+}
+.demo-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: var(--radius);
+  border: 1px solid var(--warn-border); background: var(--warn-bg);
+}
+/* display:flex, hidden ozniteligini ezmesin. */
+.demo-banner[hidden] { display: none; }
+.demo-banner p { margin: 0; flex: 1; font-size: 13px; color: var(--warn-text); }
+.demo-banner strong { color: var(--warn-strong); }
+.demo-banner .btn { padding: 7px 14px; font-size: 13px; }
+.demo-dot {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--warn-strong);
+  flex: none; box-shadow: 0 0 0 4px var(--warn-ring);
 }
 .modes { display: flex; gap: 6px; }
 .mode {
@@ -244,6 +262,16 @@ dialog::backdrop { background: rgba(0,0,0,.55); }
   </header>
 
   <section class="composer">
+    <div class="demo-banner" id="demoBanner" hidden>
+      <span class="demo-dot" aria-hidden="true"></span>
+      <p>
+        <strong>Demo modundasin.</strong>
+        Ne yazarsan yaz hep ayni ornek sayfa uretilir — istegin modele gonderilmiyor.
+        Gercek site uretmek icin API anahtarini gir.
+      </p>
+      <button class="btn primary" id="bannerSettings">Anahtarimi gir</button>
+    </div>
+
     <div class="modes" role="tablist" aria-label="Uretim turu">
       <button class="mode active" data-mode="site" role="tab" aria-selected="true">Web sitesi</button>
       <button class="mode" data-mode="app" role="tab" aria-selected="false">Web uygulamasi</button>
@@ -777,7 +805,7 @@ for (const id of ['sidebar','menuBtn','providerLabel','projectList','newProject'
   'projectTitle','downloadBtn','promptInput','generateBtn','examples','fileTree','codeView',
   'statusChip','preview','previewEmpty','previewFrame','viewportSwitch','planBar','settings',
   'providerSelect','apiKeyInput','modelInput','baseUrlInput','keyField','baseUrlField','keyHint',
-  'saveSettings']) el[id] = $(id);
+  'saveSettings','demoBanner','bannerSettings']) el[id] = $(id);
 
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (c) =>
@@ -998,6 +1026,9 @@ async function generate() {
     const { files } = parser.end();
 
     const warnings = [];
+    if (settings.provider === 'mock') {
+      warnings.push('Bu sayfa DEMO modunda uretildi: istegin modele gonderilmedi, sabit bir ornek gosteriliyor. Istedigin siteyi uretmek icin Ayarlar bolumunden API anahtarini gir.');
+    }
     if (!files.length) warnings.push('Model hic dosya uretmedi. Istegi biraz daha acik yazip tekrar deneyin.');
     if (files.some((f) => f.truncated)) warnings.push('Bir dosya yarim kalmis olabilir (token siniri).');
     if (state.mode !== 'code' && !state.files.has('index.html')) warnings.push('index.html uretilmedi; onizleme calismayabilir.');
@@ -1086,7 +1117,12 @@ function updateProviderLabel() {
   const { provider, model } = state.settings;
   const name = { anthropic: 'Claude', openai: 'OpenAI-uyumlu', mock: 'demo modu' }[provider] || provider;
   el.providerLabel.textContent = provider === 'mock' ? name : name + ' · ' + (model || DEFAULT_MODELS[provider]);
+  // Demo modu sessizce yanlis izlenim birakmasin: uretilen sayfanin istekle
+  // ilgisi olmadigini kullanici uretmeden once gormeli.
+  el.demoBanner.hidden = provider !== 'mock';
 }
+
+el.bannerSettings.addEventListener('click', () => el.settingsBtn.click());
 
 el.settingsBtn.addEventListener('click', () => {
   el.providerSelect.value = state.settings.provider;
@@ -1117,9 +1153,6 @@ el.settings.addEventListener('close', () => {
 
 updateProviderLabel();
 renderProjects();
-if (!localStorage.getItem(LS_SETTINGS)) {
-  setPlan('Demo modundasin: anahtarsiz, sabit bir ornek uretilir. Gercek uretim icin Ayarlar bolumunden saglayicini ve anahtarini gir.');
-}
 </script>
 </body>
 </html>
